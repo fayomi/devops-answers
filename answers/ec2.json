@@ -1,0 +1,143 @@
+{   
+    "AWSTemplateFormatVersion" : "2010-09-09",
+
+    "Description": "KG DevOps interview CF stack",
+    "Parameters" : {
+        "VPCID" : {
+            "Type" : "String",
+            "Default" : "vpc-7abca21c"
+              },
+        "subnetOne": {
+            "Type" : "String",
+            "Default" : "subnet-28943460"
+            },
+        "subnetTwo": {
+            "Type" : "String",
+            "Default" : "subnet-69014d55"
+            },
+        "ami": {
+            "Type" : "String",
+            "Default" : "ami-035be7bafff33b6b6"
+            }
+        },
+    "Resources": {
+        "InterviewEC2Instance": {
+            "Type": "AWS::EC2::Instance",
+            "Properties": {
+                "InstanceType": "t2.nano",
+                "ImageId": {"Ref": "ami"},
+                "SourceDestCheck": "false",
+                "IamInstanceProfile" : {"Ref": "sqsInstanceProfile"},
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": "fayomifashanu"
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Sub": "#!/bin/bash \nyum update"
+                    }
+                },
+                "SecurityGroupIds" : [{"Ref": "SG"}],
+                "SubnetId": {"Ref": "subnetOne"}
+            }
+        },
+
+        "InterviewALB": {
+            "Type" : "AWS::ElasticLoadBalancingV2::LoadBalancer",
+            "Properties" : {
+                "Name" : "interview-alb",
+                "Subnets": [{"Ref": "subnetOne"}, {"Ref": "subnetTwo"}]
+            }
+        },
+        "InterviewTG": {
+            "Type" : "AWS::ElasticLoadBalancingV2::TargetGroup",
+            "Properties" : {
+                "HealthCheckIntervalSeconds" : 30,
+                "HealthCheckPath" : "/",
+                "HealthCheckPort" : "80",
+                "HealthCheckProtocol" : "HTTP",
+                "HealthyThresholdCount" : 5,
+                "Name" : "InterviewTG",
+                "Port" : 80,
+                "Protocol" : "HTTP",
+                "Targets" : [{
+                    "Id" : {"Ref": "InterviewEC2Instance"},
+                    "Port" : 80
+                    }],
+                "VpcId" : {"Ref": "VPCID"}
+            }
+        },
+        "SG": {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "SecurityGroupIngress" : [{
+                    "CidrIp" : "0.0.0.0/0",
+                    "Description" : "Allows port 80 from 0.0.0.0/0",
+                    "FromPort" : 80,
+                    "IpProtocol" : "tcp",
+                    "ToPort" : 80
+                                                    }],
+                "GroupDescription" : "Allows traffic from ALB",
+                "VpcId" : {"Ref": "VPCID"}
+                }
+            },
+
+        "InterviewALBListener": {
+            "Type" : "AWS::ElasticLoadBalancingV2::Listener",
+            "Properties" : {
+                "LoadBalancerArn" : {"Ref": "InterviewALB"},
+                "Port" : 80,
+                "Protocol" : "HTTP",
+                "DefaultActions" : [{"Type": "forward", "TargetGroupArn" : {"Ref": "InterviewTG"}}]
+            }
+        },
+        "sqsRole": {
+            "Type": "AWS::IAM::Role",
+            "Properties": {
+                "AssumeRolePolicyDocument": {
+                "Version" : "2012-10-17",
+                "Statement": [ {
+                  "Effect": "Allow",
+                  "Principal": {
+                     "Service": [ "ec2.amazonaws.com" ]
+                  },
+                  "Action": [ "sts:AssumeRole" ]
+               } ]
+            },
+            "Path": "/",
+            "Policies": [ {
+               "PolicyName": "sqsPolicy",
+               "PolicyDocument": {
+                  "Version" : "2012-10-17",
+                  "Statement": [ {
+                     "Effect": "Allow",
+                     "Action": "sqs:GetQueueUrl",
+                     "Resource": {"Fn::ImportValue": "sqs-name"}
+                  } ]
+               }
+               } ],
+
+            }
+      },
+        "sqsInstanceProfile": {
+            "Type": "AWS::IAM::InstanceProfile",
+            "Properties": {
+                "Path": "/",
+                "Roles": [ {
+                    "Ref": "sqsRole"
+            } ]
+         }
+      }
+
+    },
+
+    "Outputs" : {
+        "InstanceID" : {
+            "Description": "The Instance ID",  
+            "Value" : { "Ref" : "InterviewEC2Instance" }
+        }
+    }
+}
+

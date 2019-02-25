@@ -1,0 +1,25 @@
+{   
+    "AWSTemplateFormatVersion" : "2010-09-09",
+
+    "Description": "KG DevOps interview CF stack",
+
+    "Resources": {
+        "SQS": {
+            "Type" : "AWS::SQS::Queue",
+            "Properties" : {
+                "QueueName": "Interview-Queue",
+            }
+        }        
+    },
+    "Outputs": {
+        "SQS": {
+            "Description" : "Information about the value",
+            "Value" : { "Fn::GetAtt" : [ "SQS", "Arn" ] },
+            "Export" : {
+                "Name" : "sqs-name"
+            }
+    
+        }
+    }
+}
+
