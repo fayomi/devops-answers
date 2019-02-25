@@ -5,19 +5,15 @@
     "Parameters" : {
         "VPCID" : {
             "Type" : "String",
-            "Default" : "vpc-7abca21c"
               },
         "subnetOne": {
             "Type" : "String",
-            "Default" : "subnet-28943460"
             },
         "subnetTwo": {
             "Type" : "String",
-            "Default" : "subnet-69014d55"
             },
         "ami": {
             "Type" : "String",
-            "Default" : "ami-035be7bafff33b6b6"
             }
         },
     "Resources": {
